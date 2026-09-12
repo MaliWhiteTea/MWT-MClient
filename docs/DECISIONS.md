@@ -61,6 +61,7 @@ Bu belge kabul edilmiş ürün kararlarını ve henüz çözülmemiş konuları 
 | D-053  | Projenin README ve yayımlandığında GitHub bilgi alanları, insan yönlendirmesi ve incelemesi altında yapay zekâ destekli geliştirme araçları kullanıldığını şeffafça belirtir.                                                                                                                             | Kabul edildi |
 | D-054  | Runtime yalnız açık `127.0.0.1`/`::1` ve sabit portta dinler. Veri/ACL, bootstrap sağlayıcısı ve veritabanı ağdan önce hazırlanır; kapanış kaynakları kapatır. Bootstrap kaydı yokluğu yalnız kurulumu kapatır.                                                                                           | Kabul edildi |
 | D-055  | POSIX korumalı yollar root olmayan servis UID'sine ait tam `0700` dizin veya `0600` dosyadır. Bootstrap kaydı yalnız digest/bitiş taşır, 1 KiB ile sınırlıdır; ek/ham alan ve on dakikayı aşan süre reddedilir, süresi geçen kayıt yok sayılır.                                                           | Kabul edildi |
+| D-056  | Windows ACL denetimi, yolu paket konumundan sabit türetilen ve kabuksuz çağrılan ayrı yardımcıdan sürümlü JSON raporu alır. TypeScript katmanı süreç SID'si, owner, korumalı DACL, ACE'ler, doğrudan izin, dosya/dizin kalıtımı ve etkili erişimi doğrular; çağrı 5 saniye/64 KiB ile sınırlıdır.         | Kabul edildi |
 
 ## Mimari inceleme sonuçları
 
@@ -240,7 +241,7 @@ Proje ve paketler sırasıyla herkese açık GitHub deposu ve GitHub Releases ü
 
 ### O-109 — Windows çalışma zamanı ACL denetimi
 
-Node.js dosya sistemi API'si Windows DACL'sini güvenilir biçimde raporlamaz; `fs.access` ACL sonucunu doğrulamaz. PowerShell ACL nesnesi yöntemleri cihaz ilkeleriyle kısıtlanabilir, `icacls` insan odaklı metin çıktısı ise güvenlik kararı için kararlı bir makine sözleşmesi değildir. Öneri, `GetNamedSecurityInfoW`/`AccessCheck` kullanan dar ve paketle birlikte doğrulanan bir Win32 yardımcı katmanıdır. Dil/toolchain, çağrı protokolü ve paket bütünlüğü uygulamadan önce netleştirilmelidir. Bu karar genel backend çalışmalarını değil Windows servis entegrasyonunu ve Windows paket çıkışını engeller.
+Node.js dosya sistemi API'si Windows DACL'sini güvenilir biçimde raporlamaz; `fs.access` ACL sonucunu doğrulamaz. PowerShell ACL nesnesi yöntemleri cihaz ilkeleriyle kısıtlanabilir, `icacls` insan odaklı metin çıktısı ise güvenlik kararı için kararlı bir makine sözleşmesi değildir. D-056 ile ayrı, self-contained .NET yardımcı programı ve dar çağrı protokolü kabul edilmiştir; yardımcı `FileSystemAclExtensions`/Windows erişim denetimini kullanacaktır. Kesin .NET hedef framework'ü desteklenecek Windows alt sürümleriyle birlikte seçilmeli ve build ortamı kurulmalıdır. Bu kalan karar genel backend çalışmalarını değil Windows servis entegrasyonunu ve Windows paket çıkışını engeller.
 
 ## Karar verme ölçütleri
 
