@@ -33,3 +33,36 @@ export const SystemStatusSchema = Type.Object(
 );
 
 export type SystemStatus = Static<typeof SystemStatusSchema>;
+
+export const AdminSetupRequestSchema = Type.Object(
+  {
+    bootstrapProof: Type.String({
+      minLength: 43,
+      maxLength: 43,
+      pattern: '^[A-Za-z0-9_-]+$',
+    }),
+    displayName: Type.String({
+      minLength: 1,
+      maxLength: 128,
+      pattern: '.*\\S.*',
+    }),
+    password: Type.String({ minLength: 12, maxLength: 4_096 }),
+  },
+  { additionalProperties: false, $id: 'AdminSetupRequest' },
+);
+export type AdminSetupRequest = Static<typeof AdminSetupRequestSchema>;
+
+export const AdminLoginRequestSchema = Type.Object(
+  { password: Type.String({ minLength: 1, maxLength: 4_096 }) },
+  { additionalProperties: false, $id: 'AdminLoginRequest' },
+);
+export type AdminLoginRequest = Static<typeof AdminLoginRequestSchema>;
+
+export const AdminSessionStatusSchema = Type.Object(
+  {
+    authenticated: Type.Literal(true),
+    displayName: Type.String({ minLength: 1, maxLength: 128 }),
+  },
+  { additionalProperties: false, $id: 'AdminSessionStatus' },
+);
+export type AdminSessionStatus = Static<typeof AdminSessionStatusSchema>;

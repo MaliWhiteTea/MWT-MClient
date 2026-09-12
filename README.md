@@ -2,6 +2,8 @@
 
 MWT-MClient, Mineflayer tabanlı Minecraft botlarını aynı cihazdaki modern bir web panelinden yönetmeyi hedefleyen, MIT lisanslı ve açık kaynak bir projedir.
 
+> **Şeffaflık notu:** Proje, insan yönlendirmesi ve incelemesi altında yapay zekâ destekli geliştirme araçları kullanılarak geliştirilmektedir.
+
 > Proje şu anda sözleşme, çalışma alanı ve ilk SQLite migration temeli aşamasındadır. Henüz kurulabilir uygulama paketi veya yayımlanmış sürüm yoktur.
 
 ## Hedeflenen ilk sürüm

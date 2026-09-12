@@ -7,7 +7,9 @@ import {
   AdminPasswordPolicyError,
   createAdminPasswordVerifier,
   createAdminSession,
+  createBootstrapProof,
   digestSessionToken,
+  verifyBootstrapProof,
 } from './admin-auth.js';
 
 describe('administrator authentication', () => {
@@ -20,30 +22,43 @@ describe('administrator authentication', () => {
     expect(first.salt).not.toBe(second.salt);
     const authenticator = new AdminPasswordAuthenticator();
     await expect(
-      authenticator.verify('loopback', 'correct horse battery', first),
+      authenticator.verify('correct horse battery', first),
     ).resolves.toBe('authenticated');
-    await expect(
-      authenticator.verify('loopback', 'wrong password', first),
-    ).resolves.toBe('invalid');
+    await expect(authenticator.verify('wrong password', first)).resolves.toBe(
+      'invalid',
+    );
     expect(JSON.stringify(first)).not.toContain('correct horse battery');
   });
 
-  it('limits both verification rate and concurrent scrypt work', async () => {
+  it('limits concurrent scrypt work without a shared lockout', async () => {
     const verifier = await createAdminPasswordVerifier('correct horse battery');
     const authenticator = new AdminPasswordAuthenticator();
     const [first, concurrent] = await Promise.all([
-      authenticator.verify('client-a', 'wrong password', verifier),
-      authenticator.verify('client-b', 'wrong password', verifier),
+      authenticator.verify('wrong password', verifier),
+      authenticator.verify('wrong password', verifier),
     ]);
 
     expect(first).toBe('invalid');
     expect(concurrent).toBe('busy');
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      await authenticator.verify('limited-client', 'wrong password', verifier);
-    }
     await expect(
-      authenticator.verify('limited-client', 'wrong password', verifier),
-    ).resolves.toBe('rate_limited');
+      authenticator.verify('correct horse battery', verifier),
+    ).resolves.toBe('authenticated');
+  });
+
+  it('creates short-lived bootstrap ownership proofs', () => {
+    const now = new Date('2026-01-01T00:00:00.000Z');
+    const proof = createBootstrapProof(now);
+    expect(proof.proof).toHaveLength(43);
+    expect(proof.digest).not.toBe(proof.proof);
+    expect(verifyBootstrapProof(proof.proof, proof, now)).toBe(true);
+    expect(verifyBootstrapProof('x'.repeat(43), proof, now)).toBe(false);
+    expect(
+      verifyBootstrapProof(
+        proof.proof,
+        proof,
+        new Date(now.getTime() + 10 * 60_000),
+      ),
+    ).toBe(false);
   });
 
   it('rejects passwords shorter than twelve characters', async () => {

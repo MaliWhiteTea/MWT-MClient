@@ -11,9 +11,7 @@ const SCRYPT_PARALLELIZATION = 1;
 const SCRYPT_KEY_LENGTH = 64;
 const SCRYPT_MAX_MEMORY = 256 * 1_024 * 1_024;
 const SCRYPT_SALT_LENGTH = 16;
-const AUTH_ATTEMPT_LIMIT = 5;
-const AUTH_ATTEMPT_WINDOW_MS = 60_000;
-const MAX_TRACKED_ATTEMPT_KEYS = 256;
+export const BOOTSTRAP_PROOF_LIFETIME_MS = 10 * 60 * 1_000;
 let scryptWorkActive = false;
 
 export interface AdminPasswordVerifier {
@@ -49,54 +47,59 @@ export class AdminPasswordPolicyError extends Error {
 }
 
 export type AdminPasswordVerificationResult =
-  'authenticated' | 'busy' | 'invalid' | 'rate_limited';
+  'authenticated' | 'busy' | 'invalid';
 
 export class AdminPasswordAuthenticator {
-  readonly #attempts = new Map<string, number[]>();
-
   async verify(
-    attemptKey: string,
     password: string,
     verifier: AdminPasswordVerifier,
-    now = new Date(),
   ): Promise<AdminPasswordVerificationResult> {
-    const timestamp = now.getTime();
-    this.#prune(timestamp);
-    const key =
-      this.#attempts.has(attemptKey) ||
-      this.#attempts.size < MAX_TRACKED_ATTEMPT_KEYS
-        ? attemptKey
-        : '__overflow__';
-    const attempts = this.#attempts.get(key) ?? [];
-    if (attempts.length >= AUTH_ATTEMPT_LIMIT) {
-      return 'rate_limited';
-    }
-    attempts.push(timestamp);
-    this.#attempts.set(key, attempts);
-
     try {
       return (await verifyAdminPassword(password, verifier))
         ? 'authenticated'
         : 'invalid';
     } catch (error) {
-      if (error instanceof ScryptWorkBusyError) {
+      if (error instanceof AdminPasswordWorkBusyError) {
         return 'busy';
       }
       throw error;
     }
   }
+}
 
-  #prune(now: number): void {
-    const cutoff = now - AUTH_ATTEMPT_WINDOW_MS;
-    for (const [key, attempts] of this.#attempts) {
-      const active = attempts.filter((timestamp) => timestamp > cutoff);
-      if (active.length === 0) {
-        this.#attempts.delete(key);
-      } else {
-        this.#attempts.set(key, active);
-      }
-    }
-  }
+export interface BootstrapProofRecord {
+  readonly digest: string;
+  readonly expiresAt: string;
+}
+
+export interface NewBootstrapProof extends BootstrapProofRecord {
+  readonly proof: string;
+}
+
+export function createBootstrapProof(now = new Date()): NewBootstrapProof {
+  const proof = randomBytes(32).toString('base64url');
+  return Object.freeze({
+    digest: digestOpaqueToken(proof),
+    expiresAt: new Date(
+      now.getTime() + BOOTSTRAP_PROOF_LIFETIME_MS,
+    ).toISOString(),
+    proof,
+  });
+}
+
+export function verifyBootstrapProof(
+  proof: string,
+  record: BootstrapProofRecord,
+  now = new Date(),
+): boolean {
+  if (now.getTime() >= Date.parse(record.expiresAt)) return false;
+  const actual = Buffer.from(digestOpaqueToken(proof), 'base64url');
+  const expected = Buffer.from(record.digest, 'base64url');
+  return (
+    actual.length === 32 &&
+    expected.length === 32 &&
+    timingSafeEqual(actual, expected)
+  );
 }
 
 export async function createAdminPasswordVerifier(
@@ -160,6 +163,10 @@ export function createAdminSession(
 }
 
 export function digestSessionToken(token: string): string {
+  return digestOpaqueToken(token);
+}
+
+function digestOpaqueToken(token: string): string {
   return createHash('sha256').update(token, 'utf8').digest('base64url');
 }
 
@@ -186,7 +193,7 @@ function isSupportedVerifier(verifier: AdminPasswordVerifier): boolean {
 
 function deriveScrypt(password: string, salt: Buffer): Promise<Buffer> {
   if (scryptWorkActive) {
-    return Promise.reject(new ScryptWorkBusyError());
+    return Promise.reject(new AdminPasswordWorkBusyError());
   }
   scryptWorkActive = true;
   return new Promise((resolve, reject) => {
@@ -217,4 +224,9 @@ function deriveScrypt(password: string, salt: Buffer): Promise<Buffer> {
   });
 }
 
-class ScryptWorkBusyError extends Error {}
+export class AdminPasswordWorkBusyError extends Error {
+  constructor() {
+    super('Administrator password work capacity is busy');
+    this.name = 'AdminPasswordWorkBusyError';
+  }
+}

@@ -102,7 +102,9 @@ React UI  SQLite   Güvenli kasa   Worker yöneticisi
 2. **Yerel yönetici hazır:** Aynı loopback dinleyicisinde normal panel kullanılabilir; LAN hâlâ varsayılan olarak kapalıdır.
 3. **LAN etkin:** Açık yönetici seçimiyle seçilen özel ağ adreslerinde ayrı HTTPS dinleyicisi açılır. Wildcard bind varsayılan değildir.
 
-Loopback ve LAN farklı origin ve oturum audience’larıdır. Loopback cookie’si LAN’da, LAN cookie’si loopback’te kabul edilmez. LAN cookie’si `Secure`, `HttpOnly`, host-only ve `SameSite=Strict` olur. Her iki yüzeyde kesin Host/Origin allowlist uygulanır ve proxy başlıkları istemci adresi kanıtı sayılmaz.
+Loopback ve LAN farklı origin ve oturum audience'larıdır. Loopback cookie'si LAN'da, LAN cookie'si loopback'te kabul edilmez. LAN cookie'si `Secure`, `HttpOnly`, host-only ve `SameSite=Strict` olur. Her iki yüzeyde kesin Host/Origin allowlist uygulanır ve proxy başlıkları istemci adresi kanıtı sayılmaz.
+
+Loopback kontrol servisi başlangıçta en az bir kesin HTTP origin'i almak zorundadır. Gerçek socket adresi loopback değilse veya Host allowlist dışında ise bütün istekler; Origin eksik/uyumsuzsa bütün durum değiştiren istekler reddedilir. İlk yönetici oluşturma bu sınırın içindeki `/api/v1/setup/admin` uç noktasıdır ve ayrıca installer/CLI'nin OS-korumalı kanalda sağladığı 10 dakikalık tek-kullanımlık bootstrap kanıtını ister.
 
 LAN TLS, kurulum başına offline yerel CA ile sağlanır. CA anahtarı güvenli kasadadır. Etkin LAN IP/isimlerini SAN olarak taşıyan 90 günlük ECDSA P-256 leaf sertifika ömrünün üçte ikisinde veya SAN değişince atomik yenilenir. CA sertifikası ve parmak izi localhost panelinden alınabilir; istemci trust store’una otomatik yazılmaz.
 

@@ -5,11 +5,18 @@ import { DatabaseSync } from 'node:sqlite';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createBootstrapProof } from '@mwt-mclient/core';
 import type { DatabaseDiagnostics } from '@mwt-mclient/database';
 import type { FastifyInstance } from 'fastify';
 
 import { createControlService } from './app.js';
 
+const loopbackOrigins = ['http://localhost'];
+const bootstrap = createBootstrapProof();
+const bootstrapProof = {
+  digest: bootstrap.digest,
+  expiresAt: bootstrap.expiresAt,
+};
 const apps: FastifyInstance[] = [];
 const temporaryDirectories: string[] = [];
 
@@ -31,7 +38,9 @@ async function temporaryDatabasePath(): Promise<string> {
 describe('control service contract', () => {
   it('opens and migrates the database before reporting readiness', async () => {
     const app = await createControlService({
+      bootstrapProof,
       databasePath: await temporaryDatabasePath(),
+      loopbackOrigins,
     });
     apps.push(app);
 
@@ -60,11 +69,18 @@ describe('control service contract', () => {
       schemaVersion: 2,
     };
     const app = await createControlService({
+      bootstrapProof,
       databasePath: 'unused-by-test',
+      loopbackOrigins,
       openDatabase: async () => ({
         close,
+        createAdministrator: vi.fn(),
+        createAdminSession: vi.fn(),
         diagnostics: () => diagnostics,
+        getAdministrator: () => null,
         hasAdministrator: () => false,
+        resumeAdminSession: () => null,
+        revokeAdminSession: () => false,
       }),
     });
 
@@ -75,7 +91,11 @@ describe('control service contract', () => {
 
   it('fails closed when persisted migration history is invalid', async () => {
     const databasePath = await temporaryDatabasePath();
-    const initializedApp = await createControlService({ databasePath });
+    const initializedApp = await createControlService({
+      bootstrapProof,
+      databasePath,
+      loopbackOrigins,
+    });
     await initializedApp.close();
 
     const tamper = new DatabaseSync(databasePath);
@@ -86,8 +106,105 @@ describe('control service contract', () => {
 
     await expect(
       createControlService({
+        bootstrapProof,
         databasePath,
+        loopbackOrigins,
       }),
     ).rejects.toThrow('Migration history does not match migration 1');
+  });
+
+  it('creates one administrator only from an allowed loopback origin', async () => {
+    const app = await createControlService({
+      bootstrapProof,
+      databasePath: await temporaryDatabasePath(),
+      loopbackOrigins,
+    });
+    apps.push(app);
+    const body = {
+      bootstrapProof: bootstrap.proof,
+      displayName: 'Yönetici',
+      password: 'correct horse battery',
+    };
+
+    const missingOrigin = await app.inject({
+      method: 'POST',
+      url: '/api/v1/setup/admin',
+      payload: body,
+    });
+    expect(missingOrigin.statusCode).toBe(403);
+
+    const invalidProof = await app.inject({
+      method: 'POST',
+      url: '/api/v1/setup/admin',
+      headers: { origin: 'http://localhost' },
+      payload: { ...body, bootstrapProof: 'x'.repeat(43) },
+    });
+    expect(invalidProof.statusCode).toBe(403);
+
+    const blankName = await app.inject({
+      method: 'POST',
+      url: '/api/v1/setup/admin',
+      headers: { origin: 'http://localhost' },
+      payload: { ...body, displayName: '   ' },
+    });
+    expect(blankName.statusCode).toBe(400);
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/setup/admin',
+      headers: { origin: 'http://localhost' },
+      payload: body,
+    });
+    expect(created.statusCode).toBe(201);
+    const cookie = created.headers['set-cookie'];
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Strict');
+
+    const duplicate = await app.inject({
+      method: 'POST',
+      url: '/api/v1/setup/admin',
+      headers: { origin: 'http://localhost' },
+      payload: body,
+    });
+    expect(duplicate.statusCode).toBe(409);
+
+    const authenticated = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/session',
+      headers: { cookie: Array.isArray(cookie) ? cookie[0] : cookie },
+    });
+    expect(authenticated.statusCode).toBe(200);
+    expect(authenticated.json()).toEqual({
+      authenticated: true,
+      displayName: 'Yönetici',
+    });
+
+    const status = await app.inject({
+      method: 'GET',
+      url: '/api/v1/system/status',
+    });
+    expect(status.json()).toMatchObject({ setupPhase: 'local_only' });
+  });
+
+  it('rejects non-loopback clients and unapproved hosts', async () => {
+    const app = await createControlService({
+      bootstrapProof,
+      databasePath: await temporaryDatabasePath(),
+      loopbackOrigins,
+    });
+    apps.push(app);
+
+    const remote = await app.inject({
+      method: 'GET',
+      url: '/api/v1/system/status',
+      remoteAddress: '192.168.1.10',
+    });
+    expect(remote.statusCode).toBe(403);
+    const wrongHost = await app.inject({
+      method: 'GET',
+      url: '/api/v1/system/status',
+      headers: { host: 'evil.example' },
+    });
+    expect(wrongHost.statusCode).toBe(403);
   });
 });
