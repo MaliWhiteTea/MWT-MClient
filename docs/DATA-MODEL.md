@@ -152,8 +152,11 @@ Anlık worker PID’si, canlı bağlantı nesneleri ve çözümlenmiş tokenlar 
 
 Geçici yeniden bağlanma sayaçları bellekte olabilir; worker crash-loop bütçesi servis yeniden başlatmasında sıfırlanmaması için son olay zamanlarıyla kalıcılaştırılır. Kalıcı kimlik/yapılandırma hatası `attention_required` olarak saklanır.
 
-## Migration ve kurtarma snapshot’ı
+## Migration ve kurtarma snapshot'ı
 
+- Kontrol servisi hazır kabul edilmeden ve herhangi bir ağ dinleyicisi açılmadan önce veritabanı açma, uyumluluk denetimi ve bekleyen migration'lar tamamlanır.
+- Başlatma sırasında daha yeni şema, bozuk migration defteri veya migration hatası görülürse servis fail-closed davranır ve dinlemeye geçmez.
+- Başarıyla açılan veritabanının şema sürümü salt okunur sistem durumu yanıtında gösterilebilir; veritabanı yolu ve migration hata ayrıntıları bu yanıta girmez.
 - Uygulama daha yeni bir şema görürse veritabanını yazmadan açmayı reddeder.
 - Bu uyumluluk kontrolü WAL gibi veritabanında kalıcı olabilen PRAGMA değişikliklerinden önce yapılır.
 - Migration öncesinde SQLite online backup mekanizmasıyla yerel recovery snapshot’ı alınır; kaynak dosyayı işletim sistemi kopyasıyla almak yeterli değildir.

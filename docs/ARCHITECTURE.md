@@ -39,6 +39,9 @@ React UI  SQLite   Güvenli kasa   Worker yöneticisi
 ### Veri katmanı
 
 - SQLite, ilişkisel ürün verisinin tek yerel kaynağıdır.
+- Kontrol servisi, ağ dinleyicisi açılmadan önce veritabanını açar ve migration/bütünlük denetimini tamamlar. Başlatma başarısızsa servis dinlemeye geçmez; kapanış yaşam döngüsü veritabanı bağlantısını kapatır.
+- Veritabanı dosya yolu servis/paketleme katmanından açıkça verilir. Böylece platforma özgü veri dizini seçimi kontrol servisinin içine gömülmez ve testler geçici dizin kullanabilir.
+- `/api/v1/system/status`, hazır bir süreçte yalnız veritabanı hazır olma işaretini ve geçerli şema sürümünü tanılama amacıyla bildirir; dosya yolu, hata ayrıntısı veya başka veritabanı iç bilgisi yayımlamaz.
 - Veritabanı erişimi yalnız kontrol servisinin bağımlılığı olan `@mwt-mclient/database` paketinde tutulur; worker paketleri bu pakete bağımlı olamaz. Yazılabilir ham bağlantı paket dışına açılmaz; dar ve türlenmiş repository işlemleri kullanılır.
 - Sabitlenmiş Node.js çalışma zamanıyla gelen `node:sqlite` kullanılır. SQLite extension yükleme etkinleştirilmez ve ORM tabanlı otomatik şema senkronizasyonu yapılmaz.
 - `foreign_keys`, WAL ve sınırlı `busy_timeout` açılır.

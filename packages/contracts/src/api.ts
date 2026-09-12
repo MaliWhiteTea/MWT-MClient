@@ -24,6 +24,8 @@ export type SetupPhase = Static<typeof SetupPhaseSchema>;
 
 export const SystemStatusSchema = Type.Object(
   {
+    databaseReady: Type.Literal(true),
+    databaseSchemaVersion: Type.Integer({ minimum: 0 }),
     product: Type.Literal('MWT-MClient'),
     setupPhase: SetupPhaseSchema,
   },

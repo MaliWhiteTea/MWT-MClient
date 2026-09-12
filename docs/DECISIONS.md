@@ -54,6 +54,7 @@ Bu belge kabul edilmiş ürün kararlarını ve henüz çözülmemiş konuları 
 | D-046  | `.mwtsk` Spigot Skript’ten esinlenir fakat Spigot Skript ile birebir kaynak, eklenti veya çalışma zamanı uyumluluğu iddia etmez.                                                                                                                                                                          | Kabul edildi |
 | D-047  | Kaynak depo pnpm workspaces kullanır; `apps/control-service`, `apps/panel`, `packages/contracts`, `packages/core`, `packages/database` ve `packages/i18n` sınırlarıyla başlar. Geliştirme tabanı Node.js 22.16+ ve TypeScript strict modudur.                                                             | Kabul edildi |
 | D-048  | SQLite erişimi yalnız kontrol servisinin bağımlılığı olan `@mwt-mclient/database` paketindedir. `node:sqlite` ve açık SQL migration'ları kullanılır; ham bağlantı dışa açılmaz. Şema uyumluluğu kalıcı PRAGMA'lardan önce okunur ve transaction-control SQL'i reddedilir. Worker bu pakete bağımlı olmaz. | Kabul edildi |
+| D-049  | Kontrol servisi veritabanını ağ dinleyicisinden önce açıp migration/bütünlük denetimini tamamlar; hata durumunda dinlemeye geçmez ve kapanışta bağlantıyı kapatır. Veri yolu platform katmanından açıkça verilir. Durum API'si veritabanına ilişkin yalnız hazır olma işareti ile şema sürümünü yayımlar. | Kabul edildi |
 
 ## Mimari inceleme sonuçları
 

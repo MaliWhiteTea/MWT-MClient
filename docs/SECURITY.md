@@ -72,7 +72,8 @@
 ## Süreç ve işletim sistemi güvenliği
 
 - Ana servis ayrı bir düşük yetkili kullanıcıyla çalışır; yönetici/root gerektiren kurulum işi çalışma zamanından ayrılır.
-- Her bot ayrı child process/worker sürecidir. Bir worker’ın çökmesi veya ele geçirilmesi diğer worker’lara doğrudan erişim vermemelidir.
+- Veritabanı migration ve bütünlük denetimi ağ dinleyicisinden önce tamamlanır. Daha yeni veya bütünlüğü bozulmuş şema halinde servis dinlemeye geçmez; durum API'si dosya yolunu ya da migration hata ayrıntısını yayımlamaz.
+- Her bot ayrı child process/worker sürecidir. Bir worker'ın çökmesi veya ele geçirilmesi diğer worker'lara doğrudan erişim vermemelidir.
 - Worker yalnız `child_process.fork()` yerleşik IPC kanalını kullanır; ağ IPC portu veya kabuk yoktur. Kontrol→worker ile worker→kontrol mesajları ayrı şemalarla sürüm, tür, güvenli tamsayı aralığındaki sıra, boyut ve içerik bakımından doğrulanır; yanlış yön ve beklenmeyen mesaj güvenli biçimde reddedilir.
 - Kullanıcı verisi dizinleri ve IPC uçları yalnızca gerekli hesaplarca okunabilir/yazılabilir olur.
 - Linux systemd unit’i en az `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=strict` ve `ProtectHome=true` kullanır; Windows servis hesabının etkileşimli giriş ve gereksiz erişimleri kapatılır. Platform sertleştirmesi Mineflayer/native bağımlılıklarla test edilir.
