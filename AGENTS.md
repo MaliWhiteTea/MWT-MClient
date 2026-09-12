@@ -8,6 +8,7 @@ Bu kurallar depo kökünün tamamında geçerlidir.
 2. İstenen değişikliği kabul edilmiş kararlarla ve açık kararlarla karşılaştır.
 3. Bir ayrıntı kesinleşmemişse sessizce ürün kapsamına ekleme; `docs/DECISIONS.md` içindeki “Açık kararlar” bölümüne taşı veya kullanıcıdan karar iste.
 4. Yalnızca görev için gereken dosyalara dokun; ilgisiz yeniden düzenleme, bağımlılık ekleme veya kapsam genişletme yapma.
+5. `C:\Users\Mert Ali\Documents\MWT-MCBOT` ayrı ve kullanıcıya özel projedir. Kullanıcı açıkça yalnız okuma amaçlı istemedikçe inceleme; hiçbir koşulda oraya yazma, taşıma, silme veya özel veri/otomasyon kopyalama.
 
 ## Zorunlu güvenlik sınırları
 
@@ -25,15 +26,19 @@ Bu kurallar depo kökünün tamamında geçerlidir.
 ## Mimari ve ürün sınırları
 
 - Backend Node.js + TypeScript, panel React + TypeScript, kalıcı veri SQLite olarak kalır.
+- İlk sürüm yalnız sistem servisi kurulumunu destekler; kullanıcı oturumuna özel taşınabilir kurulum ekleme.
 - Her bot ayrı worker sürecinde çalışır. İlk sürümün tek motoru Mineflayer’dır.
 - HeadlessMC için motor sınırını koru; uygulamasını ekleme ve panelde görünür seçenek üretme.
 - Hesap, sunucu ve bot profillerini ayrı varlıklar olarak tut. Aynı hesabın eşzamanlı kullanımı için yapay bir kısıt ekleme.
+- Hesap, sunucu ve bot profili sayısına yapay sabit sınır koyma; kurulum sihirbazını belirli sayıda varlık oluşturmaya zorlama ve sonradan panelden düzenleme/silme davranışını koru.
 - Kullanıcı arayüzü Türkçe başlar fakat tüm kullanıcı metinleri i18n anahtarları üzerinden tasarlanır. Script dili yalnızca İngilizcedir.
+- `.mwtsk` için “Spigot Skript’ten esinlenmiştir” denebilir; Spigot Skript uyumluluğu veya birebir davranış iddia etme.
 - Teknik ayrıntıları varsayılan deneyime taşımak yerine “Gelişmiş görünüm” altında tut.
 - Özel domain, Crowdin entegrasyonu, TPM, gelişmiş görsel editör ve imzalı otomatik güncellemeyi ilk sürüme dahil etme.
 
 ## Değişiklik disiplini
 
+- Kullanıcı açıkça istemedikçe commit oluşturma, branch oluşturma/değiştirme, remote ekleme/değiştirme, push veya publish yapma. Kullanıcının Git geçmişini ağırlıklı olarak GitHub Desktop ile yöneteceğini varsay.
 - Uygulama davranışını değiştiren her görevde ilgili belgeyi aynı değişiklik içinde güncelle.
 - Güvenlik açısından önemli kod için tehdit sınırını, başarısızlık davranışını ve gizli bilgi temizlemeyi test et.
 - Platforma özgü kodu soyutlamaların arkasında tut ve Windows x64, Linux x64 ile Raspberry Pi OS ARM64 etkisini değerlendir.

@@ -1,0 +1,22 @@
+{
+  "name": "@mwt-mclient/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "pnpm --filter @mwt-mclient/core build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@mwt-mclient/core": "workspace:*"
+  }
+}

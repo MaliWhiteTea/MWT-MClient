@@ -6,7 +6,7 @@ MWT-MClient, teknik ayrıntıları gerektiğinde erişilebilir tutarken Mineflay
 
 ## Hedef kullanıcı ve kullanım bağlamı
 
-İlk sürüm, kendi Windows x64, Linux x64 veya Raspberry Pi OS ARM64 cihazında bot çalıştıran tek bir panel yöneticisini hedefler. Panel aynı cihazdan veya güvenilen yerel ağdan kullanılabilir. İnternete açık, çok kiracılı bir barındırma hizmeti hedeflenmez.
+İlk sürüm, kendi Windows x64, Linux x64 veya Raspberry Pi OS ARM64 cihazında bot çalıştıran tek bir panel yöneticisini hedefler. Yalnız sistem servisi kurulum modeli desteklenir; kullanıcı oturumuna özel taşınabilir kurulum ilk sürüm kapsamında değildir. Panel aynı cihazdan veya güvenilen yerel ağdan kullanılabilir. İnternete açık, çok kiracılı bir barındırma hizmeti hedeflenmez.
 
 ## Deneyim ilkeleri
 
@@ -22,9 +22,10 @@ MWT-MClient, teknik ayrıntıları gerektiğinde erişilebilir tutarken Mineflay
 
 1. Yeni kurulum yalnızca localhost üzerinde erişilebilir olur.
 2. Kullanıcı tek panel yöneticisini oluşturur.
-3. Yönetici oluşmadan LAN erişimi etkinleştirilemez.
-4. Yönetici isterse HTTPS üzerinden LAN erişimini ve cihaz başlangıcında otomatik çalışmayı etkinleştirir.
-5. Uygulama yönlendiricide otomatik port açmaz ve dış internet yayını yapılandırmaz.
+3. Sihirbaz belirli sayıda hesap, sunucu veya bot profili oluşturmayı zorunlu kılmaz; kullanıcı hiç eklemeden bitirebilir veya ihtiyacı kadar ekleyebilir.
+4. Yönetici oluşmadan LAN erişimi etkinleştirilemez.
+5. Yönetici isterse HTTPS üzerinden LAN erişimini ve cihaz başlangıcında otomatik çalışmayı etkinleştirir.
+6. Uygulama yönlendiricide otomatik port açmaz ve dış internet yayını yapılandırmaz.
 
 ### Yönetilen varlıklar
 
@@ -33,6 +34,8 @@ MWT-MClient, teknik ayrıntıları gerektiğinde erişilebilir tutarken Mineflay
 - **Bot profili:** Hesap ile sunucuyu bir çalışma yapılandırmasında birleştiren, script ve yeniden bağlanma ayarlarını taşıyan varlık.
 
 Aynı hesap birden fazla bot profilinde ve sunucuda eşzamanlı kullanılabilir. MWT-MClient buna yapay bir sınır koymaz; dış hizmetlerin uyguladığı sınırlar kullanıcıya anlaşılır biçimde bildirilir.
+
+Uygulama hesap, sunucu veya bot profili sayısı için sabit ürün limiti koymaz. Bu varlıklar kurulumdan sonra panelden eklenebilir, değiştirilebilir ve güvenli başvuru bütünlüğü kurallarıyla kaldırılabilir.
 
 ### Bot çalıştırma
 
@@ -58,7 +61,8 @@ Aynı hesap birden fazla bot profilinde ve sunucuda eşzamanlı kullanılabilir.
 ### Scriptler
 
 - Girinti tabanlı, doğal İngilizce okunan ve Spigot Skript’ten esinlenen `.mwtsk` DSL kullanılır.
-- Görsel ve metin editörleri aynı belge/AST modelini paylaşır.
+- Spigot Skript ile kaynak veya çalışma zamanı açısından birebir uyumluluk iddia edilmez.
+- İlk sürüm metin editörü sunar. Sonraki görsel editör aynı belge/AST modelini paylaşacak ve kayıplı düzenleme yapmayacaktır.
 - Scriptler sınırlandırılmış yeteneklerle çalışır; dosya sistemi, işletim sistemi komutları ve sınırsız ağ erişimi yoktur.
 - İçe aktarılan script önce ayrıştırılır ve doğrulanır; gösterilen izin/etki özeti kullanıcı tarafından onaylanmadan çalışmaz.
 
@@ -66,7 +70,7 @@ Aynı hesap birden fazla bot profilinde ve sunucuda eşzamanlı kullanılabilir.
 
 - Sistem bileşeni ayrı, düşük yetkili bir işletim sistemi kullanıcısıyla servis olarak çalışır.
 - Kaldırıcı varsayılan olarak kullanıcı verilerini korur; tüm verileri kaldırma ayrıca ve açıkça seçilebilir.
-- Gizli tokenlar ve parolalar kullanıcı verisi yedeklerine dahil edilmez.
+- Gizli tokenlar, parolalar, yönetici parola doğrulayıcısı, oturumlar, kasa referans/değerleri ve TLS özel anahtarları kullanıcı yedeğine dahil edilmez. Geri yükleme LAN kapalı bootstrap durumuna döner.
 
 ## İlk sürüm dışında
 
@@ -78,6 +82,7 @@ Aynı hesap birden fazla bot profilinde ve sunucuda eşzamanlı kullanılabilir.
 - İmzalı otomatik güncelleme
 - Birden fazla panel yöneticisi veya rol tabanlı yetkilendirme
 - İnternete otomatik yayınlama ya da otomatik port açma
+- Kullanıcı oturumuna özel taşınabilir kurulum
 
 ## Kabul ölçütleri
 
@@ -86,7 +91,7 @@ Aynı hesap birden fazla bot profilinde ve sunucuda eşzamanlı kullanılabilir.
 - Bir worker çökmesi kontrol düzlemini veya diğer bot worker’larını düşürmez.
 - Yedek ve log örneklerinde token/parola bulunmadığı otomatik testlerle doğrulanır.
 - Aynı hesabı kullanan birden fazla bot profili uygulama kaynaklı kilit olmadan başlatılabilir.
-- Hem metin hem model tabanlı script düzenleme aynı `.mwtsk` doğrulama hattından geçer.
+- `.mwtsk` metni, AST round-trip’i ve içe aktarma aynı sürümleme/doğrulama hattından geçer; kaynak değişikliği eski onayı geçersiz kılar.
 
 ## Açık kararlar
 

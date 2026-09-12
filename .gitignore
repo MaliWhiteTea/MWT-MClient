@@ -4,6 +4,9 @@ dist/
 build/
 coverage/
 *.tsbuildinfo
+.vitest/
+.vite/
+.pnpm-store/
 
 # Local environment and secrets
 .env

@@ -1,15 +1,29 @@
 # Kavramsal veri modeli
 
-Bu belge uygulama şemasını değil, ilk sürümde korunması gereken varlık sınırlarını tanımlar. Kesin tablo/kolon adları ve migration aracı henüz seçilmemiştir.
+Bu belge ilk sürümde korunması gereken varlık sınırlarını ve şema kurallarını tanımlar. İlk migration'ın SQL adları aşağıda kaydedilmiştir; sonraki varlıklar ilgili özellik uygulanırken yeni ileri migration'larla eklenecektir.
 
 ## İlkeler
 
 - Hesaplar, sunucular ve bot profilleri ayrı varlıklardır.
 - Bir hesap birçok bot profiline bağlanabilir; eşzamanlı kullanım için benzersizlik kilidi yoktur.
 - Bir sunucu birçok bot profili tarafından kullanılabilir.
+- Account, Server ve BotProfile için sabit adet kotası veya kurulum sihirbazına bağlı minimum kayıt sayısı yoktur.
 - Gizli değerlerin kendisi SQLite’ta tutulmaz; yalnızca güvenli kasa için opak referanslar tutulabilir.
 - Worker süreçleri SQLite’a doğrudan yazmaz; kalıcı değişiklikler kontrol düzleminden geçer.
 - Kimlikler, kullanıcı tarafından değiştirilebilen adlardan bağımsız ve kararlı olmalıdır.
+- Foreign keys ve WAL açılır; kontrol düzlemi tek yazardır.
+- Her şema değişikliği sıralı kimlik ve checksum taşıyan açık SQL migration'dır. Uygulanan kayıtlar `schema_migrations` içinde tutulur; migration transaction içinde yürür ve downgrade reddedilir.
+
+## Uygulanan ilk şema
+
+`0001_initial_entities` migration'ı aşağıdaki `STRICT` tabloları oluşturur:
+
+- `schema_migrations`: migration kimliği, adı, SHA-256 checksum'ı ve uygulanma zamanı.
+- `accounts`: Microsoft/offline hesap kimliği, gizli olmayan profil verisi ve isteğe bağlı opak `credential_reference`. Parola, token veya sır değeri alanı yoktur.
+- `servers`: sunucu adresi/portu ile `auto` veya `manual` sürüm seçimi.
+- `bot_profiles`: hesap ile sunucuyu Mineflayer profili olarak bağlar; `account_id` veya `(account_id, server_id)` üzerinde tekillik yoktur.
+
+`bot_profiles.account_id` ve `bot_profiles.server_id` yabancı anahtarları `ON DELETE RESTRICT` kullanır. İlişki indeksleri performans içindir ve benzersiz değildir. İlk migration henüz Admin, script, audit veya çalışma geçmişi tablolarını oluşturmaz; bunlar kendi özellikleri ve açık kararları tamamlandığında yalnız ileri migration ile eklenecektir.
 
 ## Varlıklar
 
@@ -35,6 +49,8 @@ Tekil kurulum ayarlarını taşır.
 - Şema/uygulama ayar sürümü
 
 LAN erişimi `Admin` oluşmadan etkin duruma getirilemez.
+
+LAN yapılandırması yalnız seçilen özel ağ adreslerini tutar; wildcard bind varsayılanı saklanmaz. Sertifika özel anahtarı veya CA özel anahtarı bu varlıkta bulunmaz.
 
 ### Account
 
@@ -78,6 +94,7 @@ Microsoft parolası için alan bulunmaz. Offline hesap için token referansı ge
 - Oluşturulma ve güncellenme zamanı
 
 Script metninde gerçek sır değeri bulunmaz; yalnızca isimlendirilmiş sır referansı kullanılabilir.
+Kaynağın ilk anlamlı satırındaki `language <major>` değeri ayrı indekslenebilir fakat kaynakla uyuşmazsa doğrulama başarısız olur; veritabanı metadata’sı kaynak sürümünü geçersiz kılamaz.
 
 ### ScriptApproval
 
@@ -93,10 +110,10 @@ Script içeriği değişince eski onay geçersiz olur. İçe aktarılan script g
 ### BotProfileScript
 
 - Bot profili ve script ilişkisi
-- Çalıştırma sırası/önceliği için geleceğe dayanıklı alan
+- Profil içinde benzersiz ve kararlı bağlama sırası
 - Etkinlik durumu
 
-Kesin sıralama davranışı açık karardır; alanın varlığı bir yürütme sırası taahhüdü değildir.
+Olaylar bu bağlama sırasıyla script kuyruklarına fan-out edilir. Aynı olay için host eylem sırası olay sıra numarası, bağlama sırası ve script içi eylem sıra numarasından türetilir.
 
 ### SecretReference
 
@@ -133,16 +150,35 @@ Bu kayıt dış telemetri değildir ve cihazdan gönderilmez.
 
 Anlık worker PID’si, canlı bağlantı nesneleri ve çözümlenmiş tokenlar kalıcı ürün varlığı değildir. Çökme sonrası SQLite’taki istenen durum ile süreç gözlemi uzlaştırılır.
 
+Geçici yeniden bağlanma sayaçları bellekte olabilir; worker crash-loop bütçesi servis yeniden başlatmasında sıfırlanmaması için son olay zamanlarıyla kalıcılaştırılır. Kalıcı kimlik/yapılandırma hatası `attention_required` olarak saklanır.
+
+## Migration ve kurtarma snapshot’ı
+
+- Uygulama daha yeni bir şema görürse veritabanını yazmadan açmayı reddeder.
+- Bu uyumluluk kontrolü WAL gibi veritabanında kalıcı olabilen PRAGMA değişikliklerinden önce yapılır.
+- Migration öncesinde SQLite online backup mekanizmasıyla yerel recovery snapshot’ı alınır; kaynak dosyayı işletim sistemi kopyasıyla almak yeterli değildir.
+- Recovery snapshot, veri dizini ACL’si içinde tutulur, kullanıcıya taşınabilir yedek olarak sunulmaz ve başarılı migration sonrası kontrollü temizlenir.
+- Snapshot adı migration kimliği ve rastgele UUID taşır. Başlangıç uzlaştırması yalnız uygulamaya ait ad biçimini karşılayan ve migration defterinde uygulanmış görünen snapshot’ları yeniden temizler; uygulanmamış/başarısız migration snapshot’ını korur.
+- Migration başarısızsa transaction rollback edilir; otomatik down-migration uygulanmaz.
+- Migration dosyaları `BEGIN`, `COMMIT`, `ROLLBACK`, `SAVEPOINT`, `RELEASE` veya transaction anlamındaki `END` ifadelerini çalıştıramaz; transaction sınırı yalnız runner tarafından yönetilir.
+
 ## Silme ve başvuru bütünlüğü
 
+- Hesaplar, sunucular ve bot profilleri kurulum sonrasında panelden eklenebilir, değiştirilebilir ve kaldırılabilir.
 - Kullanılan bir hesap veya sunucu silinmeden önce bağlı bot profilleri açıkça ele alınır; sessiz zincirleme silme yapılmaz.
 - Script silme, bot profili bağlarını kontrollü biçimde kaldırır fakat audit kaydına sır yazmaz.
 - Kasa kaydı, referans veren ürün verisiyle koordineli ve başarısızlıkta kurtarılabilir biçimde silinir.
 
 ## Yedek sınırı
 
-Yedek; SQLite’ın tutarlı anlık görüntüsünü ve uygun kullanıcı içeriklerini kapsayabilir. Kasa değerleri, Microsoft tokenları, parolalar ve script sırları kapsam dışıdır. Geri yükleme sonrasında bu sırları kullanan özellikler yeniden bağlantı/yeniden giriş isteyebilir.
+Kullanıcı yedeği tam SQLite snapshot’ı değildir. Sürümlü manifest, checksum ve yalnız izinli varlık/alanlardan üretilmiş sanitize veri veritabanı içeren `.mwtbackup` ZIP’tir.
+
+- Hesapların gizli olmayan kimliği, sunucular, bot profilleri, `.mwtsk` kaynakları ve kullanıcı tercihleri taşınabilir.
+- Admin kaydı/parola doğrulayıcısı, oturumlar, güvenlik audit olayları, kasa referansları ve değerleri, Microsoft/Xbox/Minecraft tokenları, cihaz kodları, script sırları ve TLS özel anahtarları taşınmaz.
+- Secret gerektiren hesap ve script bağları restore sonrasında `reauth_required`/`secret_required` durumuna dönüştürülür.
+- Restore staging alanında manifest, checksum ve desteklenen şema sürümünü doğrular; sonra atomik uygulanır.
+- Restore edilen kurulum admin yok, kurulum tamamlanmamış ve LAN kapalı durumda açılır. Yeni yönetici yalnız localhost üzerinden oluşturulur.
 
 ## Açık kararlar
 
-Kesin SQL şeması, migration aracı, silme politikaları, audit kapsamı, yedek biçimi ve şifreleme seçimi `docs/DECISIONS.md` içinde izlenir.
+Henüz uygulanmamış tabloların kesin SQL adları/indeksleri, audit olay kataloğu ve `.mwtbackup` passphrase şifreleme deneyimi `docs/DECISIONS.md` sınırları içinde ilgili görevlerde netleştirilir. Yedek şifreleme tercihi O-104 olarak kullanıcı kararına açıktır.

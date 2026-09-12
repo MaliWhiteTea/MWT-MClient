@@ -2,12 +2,13 @@
 
 MWT-MClient, Mineflayer tabanlı Minecraft botlarını aynı cihazdaki modern bir web panelinden yönetmeyi hedefleyen, MIT lisanslı ve açık kaynak bir projedir.
 
-> Proje şu anda belge ve mimari hazırlık aşamasındadır. Henüz çalıştırılabilir uygulama, kurulum paketi veya yayımlanmış sürüm yoktur.
+> Proje şu anda sözleşme, çalışma alanı ve ilk SQLite migration temeli aşamasındadır. Henüz kurulabilir uygulama paketi veya yayımlanmış sürüm yoktur.
 
 ## Hedeflenen ilk sürüm
 
 - Windows x64, Linux x64 ve Raspberry Pi OS ARM64 desteği
 - Ayrı, düşük yetkili bir sistem kullanıcısı altında servis olarak çalışma
+- İlk sürümde yalnız sistem servisi kurulumu; kullanıcı oturumuna özel taşınabilir kurulum yok
 - İsteğe bağlı cihaz başlangıcında otomatik başlatma
 - Aynı cihazdan ve yerel ağdan erişilebilen, mobil uyumlu React paneli
 - Yalnızca localhost üzerinden ilk kurulum; yönetici oluşturulana kadar LAN erişiminin kapalı kalması
@@ -15,12 +16,15 @@ MWT-MClient, Mineflayer tabanlı Minecraft botlarını aynı cihazdaki modern bi
 - Tek panel yöneticisi
 - Microsoft cihaz giriş akışı ve offline Minecraft hesapları
 - Hesap, sunucu ve bot profillerinin ayrı yönetimi
+- Kurulum sihirbazında sabit sayı zorunluluğu olmadan istenen sayıda hesap, sunucu ve bot profili ekleme; bunları daha sonra değiştirme veya kaldırma
 - Her bot için ayrı Mineflayer worker süreci
 - Otomatik sürüm algılama veya elle Minecraft sürümü seçimi
 - Kontrollü çökme kurtarma ve otomatik yeniden bağlanma
 - Metin ve ileride görsel editör tarafından paylaşılacak `.mwtsk` script modeli
 
 İlk sürümde HeadlessMC uygulanmayacak ve panelde seçenek olarak gösterilmeyecektir. Özel domain, Crowdin bağlantısı, TPM desteği, gelişmiş görsel editör ve imzalı otomatik güncelleme de sonraki sürümlere bırakılmıştır.
+
+MWT Script, Spigot Skript’ten esinlenir fakat Spigot Skript ile birebir uyumluluk iddiası taşımaz.
 
 ## Temel ilkeler
 
@@ -42,6 +46,23 @@ MWT-MClient, Mineflayer tabanlı Minecraft botlarını aynı cihazdaki modern bi
 - [Karar kaydı ve açık kararlar](docs/DECISIONS.md)
 - [Katkı ve ajan çalışma kuralları](AGENTS.md)
 
+## Geliştirme
+
+Geliştirme çalışma alanı pnpm workspaces kullanır ve SQLite online backup API'si nedeniyle Node.js 22.16 veya üzerini gerektirir. Mevcut iskelet için doğrulama komutu:
+
+```text
+pnpm install
+pnpm verify
+```
+
+Bu komutlar yalnız geliştirme iskeletini doğrular; henüz sistem servisi kurmaz veya bot çalıştırmaz.
+
+Panelin geliştirme görünümünü yalnız localhost üzerinde açmak için:
+
+```text
+pnpm dev
+```
+
 ## Lisans
 
-MWT-MClient, [MIT Lisansı](LICENSE) ile lisanslanacaktır.
+MWT-MClient, [MIT Lisansı](LICENSE) ile lisanslanacaktır. Proje GitHub’da yayımlandığında herkese açık olacaktır; kesin hesap/organizasyon ve depo adresi henüz kararlaştırılmamıştır.

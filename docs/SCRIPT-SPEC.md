@@ -6,10 +6,13 @@ Bu belge ilk sürüm dili için güvenlik ve uyumluluk sınırlarını tanımlar
 
 MWT Script; Spigot Skript’ten esinlenen, girintiyle blok oluşturan ve doğal İngilizce okunan bir DSL’dir. Dil anahtar kelimeleri yalnızca İngilizcedir. Wiki, hata açıklamaları ve panel çevrilebilir.
 
+Spigot Skript bir tasarım esinidir; `.mwtsk` dosyalarının Spigot Skript tarafından çalıştırılacağı, mevcut Skript eklentileriyle uyumlu olduğu veya sözdizimi/davranışının birebir eşleştiği iddia edilmez. Uyumluluk katmanı ilk sürüm kapsamına dahil değildir.
+
 ## Dosya ve metin kuralları
 
 - Uzantı `.mwtsk` olur.
 - Metin UTF-8’dir ve satır sonları ayrıştırma sırasında normalize edilir.
+- İlk yorum veya boş satır olmayan satır tam olarak `language <major>` biçimindedir; ilk sürüm `language 1` kullanır. Eksik veya desteklenmeyen major sürüm doğrulama hatasıdır.
 - Girinti yalnızca boşluklarla yapılır; önerilen genişlik 2 boşluktur. Tab karakteri doğrulama hatasıdır.
 - Aynı blokta girinti genişliği tutarlı olmalıdır.
 - Boş satırlar anlam taşımaz.
@@ -26,11 +29,15 @@ MWT Script; Spigot Skript’ten esinlenen, girintiyle blok oluşturan ve doğal 
 
 Biçimleyici anlamsal olarak eşdeğer, kararlı çıktı üretmelidir. Bilinmeyen veya daha yeni AST düğümleri sessizce atılmaz.
 
+İlk sürüm yalnız metin editörü sağlar. AST/formatter sözleşmesi ilk sürümde kararlılaştırılır; sonraki görsel editör desteklemediği düğümleri salt-okunur göstermeli ve kayıplı kaydetmeyi reddetmelidir.
+
 ## Önerilen çekirdek biçim
 
 Aşağıdaki örnek söz dizimi yönünü gösterir; olay/eylem adları katalog kararı verilene kadar taslaktır:
 
 ```text
+language 1
+
 # Example only; event and action names are provisional.
 on bot joined:
   wait 2 seconds
@@ -100,10 +107,20 @@ Bir script şu durumlardan geçer:
 - Hatalar kaynak konumu verir fakat sır değerlerini veya hassas oturum verisini içermez.
 - Aynı girdi ve aynı izinli durum için dil davranışı mümkün olduğunca belirlenimlidir.
 
+### Olay, kuyruk ve eylem sırası
+
+- Worker her motor olayına artan bir `eventSequence` verir ve olayı etkin scriptlere bot profilindeki kararlı bağlama sırasıyla fan-out eder.
+- Her script aynı anda en fazla bir handler çalıştırır ve kendi sınırlı FIFO kuyruğunu kullanır. Kuyruk doluyken gelen yeni olay çalıştırılmadan reddedilir; sır içermeyen, hız sınırlı uyarı üretilir.
+- Scriptler ortak değiştirilebilir bellek paylaşmaz. Bir script hatası diğer scriptin kuyruğunu durdurmaz.
+- Host eylemleri tek broker’da `(eventSequence, bindingOrder, actionSequence)` sırasıyla işlenir. Kullanıcının stop/durdurma eylemi önceliklidir ve bekleyen script eylemlerini iptal edebilir.
+- Kesin FIFO derinliği, handler adım/süre/bellek limitleri ve eylem hızları en yavaş Raspberry Pi ARM64 hedefindeki ölçümlerden sonra sabitlenir.
+
 ## Sürümleme ve uyumluluk
 
-Dil ve AST ayrı sürüm bilgileri taşır. Desteklenmeyen daha yeni bir sürüm çalıştırılmaz; anlaşılır hata üretilir. Göç, kayıplı dönüşüm yapacaksa otomatik uygulanmaz ve kullanıcı onayı ister.
+Kaynak dosya major dil sürümünü, iç model ayrı tamsayı AST şema sürümünü taşır. Kırıcı sözdizimi veya anlam değişikliği `language` major’ını artırır. Aynı major içindeki eklemeler daha eski geçerli dosyaların anlamını değiştiremez.
+
+Desteklenmeyen major sürüm çalıştırılmaz; anlaşılır hata üretilir. AST yalnız parser çıktısından üretilir ve metadata kaynak başlığını geçersiz kılamaz. Göç kayıplı dönüşüm yapacaksa otomatik kaydetmez, kullanıcı onayı ister ve içeriğe bağlı eski çalıştırma onayını geçersiz kılar.
 
 ## Açık kararlar
 
-Tam gramer, olay/eylem kataloğu, tip ve dönüşüm kuralları, hata modeli, yorumlayıcı kotası, scriptler arası etkileşim ve görsel editörün ilk kullanılabilir kapsamı `docs/DECISIONS.md` içinde izlenir.
+Tam gramerde tanımlayıcı duyarlılığı/tip/dönüşüm/hata ayrıntıları ile ilk tetikleyici-eylem kataloğu O-105’te; sayısal kotalar O-106’da açıktır. Sonraki görsel editörün kapsamı O-107’de ürün sahibi kararına bırakılmıştır.
