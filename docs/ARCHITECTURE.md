@@ -41,7 +41,8 @@ React UI  SQLite   Güvenli kasa   Worker yöneticisi
 
 - SQLite, ilişkisel ürün verisinin tek yerel kaynağıdır.
 - Kontrol servisi, ağ dinleyicisi açılmadan önce veritabanını açar ve migration/bütünlük denetimini tamamlar. Başlatma başarısızsa servis dinlemeye geçmez; kapanış yaşam döngüsü veritabanı bağlantısını kapatır.
-- Veritabanı dosya yolu servis/paketleme katmanından açıkça verilir. Böylece platforma özgü veri dizini seçimi kontrol servisinin içine gömülmez ve testler geçici dizin kullanabilir.
+- Veritabanı dosya yolu servis/paketleme katmanından açıkça verilir. Çalışma zamanı yalnız önceden oluşturulmuş, kendisi sembolik bağ/junction olmayan gerçek bir dizini kabul eder ve Linux'ta grup/diğer erişimine açık izinleri reddeder. Platform katmanı dinleme başlamadan önce kanonik yolun Windows ACL'sini veya Unix sahiplik/izinlerini ayrıca doğrulayan zorunlu denetleyiciyi sağlar. Böylece platforma özgü veri dizini seçimi ve yetki çözümü kontrol servisinin içine gömülmez.
+- POSIX güvenlik adaptörü dizinde servis kullanıcısı sahipliği ile tam `0700`, korumalı dosyada aynı sahiplik ile tam `0600` ister ve geçerli servis sürecinin gerçek okuma/yazma erişimini dar bir probe ile doğrular. Sembolik bağlar ve diğer dosya türleri reddedilir.
 - `/api/v1/system/status`, hazır bir süreçte yalnız veritabanı hazır olma işaretini ve geçerli şema sürümünü tanılama amacıyla bildirir; dosya yolu, hata ayrıntısı veya başka veritabanı iç bilgisi yayımlamaz.
 - Veritabanı erişimi yalnız kontrol servisinin bağımlılığı olan `@mwt-mclient/database` paketinde tutulur; worker paketleri bu pakete bağımlı olamaz. Yazılabilir ham bağlantı paket dışına açılmaz; dar ve türlenmiş repository işlemleri kullanılır.
 - Sabitlenmiş Node.js çalışma zamanıyla gelen `node:sqlite` kullanılır. SQLite extension yükleme etkinleştirilmez ve ORM tabanlı otomatik şema senkronizasyonu yapılmaz.
@@ -104,7 +105,9 @@ React UI  SQLite   Güvenli kasa   Worker yöneticisi
 
 Loopback ve LAN farklı origin ve oturum audience'larıdır. Loopback cookie'si LAN'da, LAN cookie'si loopback'te kabul edilmez. LAN cookie'si `Secure`, `HttpOnly`, host-only ve `SameSite=Strict` olur. Her iki yüzeyde kesin Host/Origin allowlist uygulanır ve proxy başlıkları istemci adresi kanıtı sayılmaz.
 
-Loopback kontrol servisi başlangıçta en az bir kesin HTTP origin'i almak zorundadır. Gerçek socket adresi loopback değilse veya Host allowlist dışında ise bütün istekler; Origin eksik/uyumsuzsa bütün durum değiştiren istekler reddedilir. İlk yönetici oluşturma bu sınırın içindeki `/api/v1/setup/admin` uç noktasıdır ve ayrıca installer/CLI'nin OS-korumalı kanalda sağladığı 10 dakikalık tek-kullanımlık bootstrap kanıtını ister.
+Loopback kontrol servisi çalışma zamanı açıkça `127.0.0.1` veya `::1` adreslerinden birini ve geçerli, sabit bir portu almak zorundadır; wildcard, hostname ve rastgele port kabul etmez. Dinleyici açılmadan önce veri dizini güvenlik denetimi, bootstrap kanıt sağlayıcısı ve veritabanı migration/bütünlük denetimi tamamlanır. Dinleme başarısız olursa açılmış veritabanı kapatılır; servis yöneticisinin stop isteği aynı kontrollü kapanış yolunu çağırır.
+
+Gerçek socket adresi loopback değilse veya Host allowlist dışında ise bütün istekler; Origin eksik/uyumsuzsa bütün durum değiştiren istekler reddedilir. İlk yönetici oluşturma bu sınırın içindeki `/api/v1/setup/admin` uç noktasıdır ve ayrıca installer/CLI'nin OS-korumalı kanalda sağladığı 10 dakikalık tek-kullanımlık bootstrap kanıtını ister. Kanıt sağlayıcısı sabit adlı ve boyutu sınırlı korumalı kayıttan yalnız özet ile bitiş zamanını okur; ham kanıt alanını veya başka ek alanları reddeder. Geçerli istek scrypt başlamadan önce kaydı kalıcı olarak tüketir; kalıcı tüketim doğrulanamazsa yönetici yazılmaz ve aynı süreçte yeniden denenmez. Süresi geçmiş ya da kurulumdan sonra kaldırılmış kayıt servisin normal başlamasını engellemez fakat yeni yönetici kurulumu yeni kanıt sağlanana kadar kapalı kalır.
 
 LAN TLS, kurulum başına offline yerel CA ile sağlanır. CA anahtarı güvenli kasadadır. Etkin LAN IP/isimlerini SAN olarak taşıyan 90 günlük ECDSA P-256 leaf sertifika ömrünün üçte ikisinde veya SAN değişince atomik yenilenir. CA sertifikası ve parmak izi localhost panelinden alınabilir; istemci trust store’una otomatik yazılmaz.
 
@@ -134,4 +137,4 @@ Yönetici kurtarma yalnız cihazdaki yükseltilmiş etkileşimli araçla yapıl�
 
 ## Açık kararlar
 
-Desteklenen Linux/systemd alt sürümleri, Microsoft public-client kaydının sahibi, kesin Minecraft destek matrisi, yedek şifreleme deneyimi ve kesin GitHub hesap/organizasyon/depo adresi `docs/DECISIONS.md` içinde açık kalır.
+Desteklenen Linux/systemd alt sürümleri, Windows çalışma zamanı ACL yardımcı katmanı, Microsoft public-client kaydının sahibi, kesin Minecraft destek matrisi, yedek şifreleme deneyimi ve kesin GitHub hesap/organizasyon/depo adresi `docs/DECISIONS.md` içinde açık kalır.

@@ -4,7 +4,7 @@ MWT-MClient, Mineflayer tabanlı Minecraft botlarını aynı cihazdaki modern bi
 
 > **Şeffaflık notu:** Proje, insan yönlendirmesi ve incelemesi altında yapay zekâ destekli geliştirme araçları kullanılarak geliştirilmektedir.
 
-> Proje şu anda sözleşme, çalışma alanı ve ilk SQLite migration temeli aşamasındadır. Henüz kurulabilir uygulama paketi veya yayımlanmış sürüm yoktur.
+> Proje şu anda çalışma alanı, SQLite yaşam döngüsü, localhost kontrol servisi ve tek yönetici kimlik doğrulama temeli aşamasındadır. Henüz kurulabilir uygulama paketi veya yayımlanmış sürüm yoktur.
 
 ## Hedeflenen ilk sürüm
 

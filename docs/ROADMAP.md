@@ -15,7 +15,7 @@ Bu yol haritası tarih veya sürüm numarası taahhüdü vermez. Aşamalar, önc
 - Sürümlü/şema doğrulamalı child-process IPC zarfları ve yalnız Mineflayer’ı kabul eden `BotEngine` sınırı
 - SQLite tek-yazar katmanı, açık/checksum’lı ileri migration ve recovery snapshot temeli
 - React + TypeScript panel kabuğu, Türkçe i18n kaynakları, açık/koyu tema ve mobil düzen
-- Yalnız loopback HTTP ilk kurulum, tek yönetici ve ayrı LAN HTTPS durum makinesi
+- Yalnız açık loopback adresine bağlanan HTTP çalışma zamanı, korumalı bootstrap kanıt sağlayıcısı, kontrollü kapanış, tek yönetici ve ayrı LAN HTTPS durum makinesi
 - Windows DPAPI ve Linux/systemd credential tabanlı güvenli kasa adapter’ları
 - Yerel CA oluşturma, manuel istemci güveni ve otomatik leaf yenileme
 - Platforma uygun düşük yetkili servis hesabı, yerel yönetici kurtarma ve servis yaşam döngüsü
@@ -82,4 +82,4 @@ Bu maddelerin sırası ve sürüm eşlemesi henüz kararlaştırılmamıştır.
 
 ## Açık kararlar
 
-Tam liste `docs/DECISIONS.md` içindedir. Microsoft özelliğinin yayınından önce uygulama kaydı (O-102), bot uyumluluk çıkışından önce Minecraft matrisi (O-103), script runtime'dan önce tetikleyici/eylem kataloğu ve ölçülmüş kotalar (O-105/O-106) kapanmalıdır. Linux destek tabanı (O-101), yedek şifreleme deneyimi (O-104) ve kesin GitHub hesap/organizasyon/depo adresi (O-108) halka açık paketleme öncesi gereklidir; sonraki görsel editör kapsamı (O-107) ilk sürümü engellemez.
+Tam liste `docs/DECISIONS.md` içindedir. Microsoft özelliğinin yayınından önce uygulama kaydı (O-102), bot uyumluluk çıkışından önce Minecraft matrisi (O-103), script runtime'dan önce tetikleyici/eylem kataloğu ve ölçülmüş kotalar (O-105/O-106) kapanmalıdır. Linux destek tabanı (O-101), yedek şifreleme deneyimi (O-104), kesin GitHub hesap/organizasyon/depo adresi (O-108) ve Windows ACL yardımcı katmanı (O-109) ilgili halka açık paketleme öncesi gereklidir; sonraki görsel editör kapsamı (O-107) ilk sürümü engellemez.

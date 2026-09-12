@@ -14,8 +14,11 @@ import { createControlService } from './app.js';
 const loopbackOrigins = ['http://localhost'];
 const bootstrap = createBootstrapProof();
 const bootstrapProof = {
-  digest: bootstrap.digest,
-  expiresAt: bootstrap.expiresAt,
+  consume: async () => true,
+  record: {
+    digest: bootstrap.digest,
+    expiresAt: bootstrap.expiresAt,
+  },
 };
 const apps: FastifyInstance[] = [];
 const temporaryDirectories: string[] = [];
@@ -114,8 +117,9 @@ describe('control service contract', () => {
   });
 
   it('creates one administrator only from an allowed loopback origin', async () => {
+    const consume = vi.fn(async () => true);
     const app = await createControlService({
-      bootstrapProof,
+      bootstrapProof: { consume, record: bootstrapProof.record },
       databasePath: await temporaryDatabasePath(),
       loopbackOrigins,
     });
@@ -156,6 +160,7 @@ describe('control service contract', () => {
       payload: body,
     });
     expect(created.statusCode).toBe(201);
+    expect(consume).toHaveBeenCalledOnce();
     const cookie = created.headers['set-cookie'];
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('SameSite=Strict');
@@ -184,6 +189,64 @@ describe('control service contract', () => {
       url: '/api/v1/system/status',
     });
     expect(status.json()).toMatchObject({ setupPhase: 'local_only' });
+  });
+
+  it('keeps setup unavailable when no protected bootstrap proof is loaded', async () => {
+    const app = await createControlService({
+      bootstrapProof: null,
+      databasePath: await temporaryDatabasePath(),
+      loopbackOrigins,
+    });
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/setup/admin',
+      headers: { origin: 'http://localhost' },
+      payload: {
+        bootstrapProof: bootstrap.proof,
+        displayName: 'Yönetici',
+        password: 'correct horse battery',
+      },
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({
+      code: 'bootstrap_proof_unavailable',
+      messageKey: 'api.error.bootstrap_proof_unavailable',
+    });
+  });
+
+  it('fails closed when the persistent bootstrap proof cannot be consumed', async () => {
+    const consume = vi.fn(async () => false);
+    const app = await createControlService({
+      bootstrapProof: { consume, record: bootstrapProof.record },
+      databasePath: await temporaryDatabasePath(),
+      loopbackOrigins,
+    });
+    apps.push(app);
+    const request = {
+      method: 'POST' as const,
+      url: '/api/v1/setup/admin',
+      headers: { origin: 'http://localhost' },
+      payload: {
+        bootstrapProof: bootstrap.proof,
+        displayName: 'Yönetici',
+        password: 'correct horse battery',
+      },
+    };
+
+    const first = await app.inject(request);
+    const retry = await app.inject(request);
+
+    expect(first.statusCode).toBe(403);
+    expect(retry.statusCode).toBe(403);
+    expect(consume).toHaveBeenCalledOnce();
+    const status = await app.inject({
+      method: 'GET',
+      url: '/api/v1/system/status',
+    });
+    expect(status.json()).toMatchObject({ setupPhase: 'bootstrap' });
   });
 
   it('rejects non-loopback clients and unapproved hosts', async () => {

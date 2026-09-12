@@ -57,8 +57,10 @@ Bu belge kabul edilmiş ürün kararlarını ve henüz çözülmemiş konuları 
 | D-049  | Kontrol servisi veritabanını ağ dinleyicisinden önce açıp migration/bütünlük denetimini tamamlar; hata durumunda dinlemeye geçmez ve kapanışta bağlantıyı kapatır. Veri yolu platform katmanından açıkça verilir. Durum API'si veritabanına ilişkin yalnız hazır olma işareti ile şema sürümünü yayımlar. | Kabul edildi |
 | D-050  | Tek yönetici parolası en az 12 karakterdir ve scrypt (`N=2^17`, `r=8`, `p=1`, 16 bayt rastgele salt, 64 bayt çıktı) ile doğrulanır. Oturum 30 dakika hareketsizlikte ve en geç 24 saatte sona erer; LAN ayarı değişikliği parolanın yeniden doğrulanmasını gerektirir. Ham oturum belirteci saklanmaz.    | Kabul edildi |
 | D-051  | Yönetici parola doğrulaması süreç genelinde aynı anda bir scrypt işiyle sınırlıdır; dolu işlem yeni pahalı işi kuyruğa almaz veya başarısız-deneme kilidi oluşturmaz. Oturum kabulü audience, iptal ve iki süre sınırını tek atomik repository işleminde doğrular ve idle süresini aynı işlemde yeniler.  | Kabul edildi |
-| D-052  | İlk yönetici oluşturma; yapılandırılmış loopback HTTP origin/Host ve gerçek loopback istemci adresine ek olarak installer/CLI'nin OS-korumalı kanalda ürettiği, 10 dakikalık tek-kullanımlık 256 bit bootstrap kanıtını gerektirir. Kanıt doğrulanmadan scrypt veya veritabanı yazımı yapılmaz.           | Kabul edildi |
+| D-052  | İlk yönetici için loopback IP/origin/Host yanında installer/CLI'nin OS-korumalı, 10 dakikalık tek-kullanımlık 256 bit kanıtı gerekir. Geçerli istek kanıt kaydını scrypt/veritabanı yazımından önce kalıcı tüketir.                                                                                       | Kabul edildi |
 | D-053  | Projenin README ve yayımlandığında GitHub bilgi alanları, insan yönlendirmesi ve incelemesi altında yapay zekâ destekli geliştirme araçları kullanıldığını şeffafça belirtir.                                                                                                                             | Kabul edildi |
+| D-054  | Runtime yalnız açık `127.0.0.1`/`::1` ve sabit portta dinler. Veri/ACL, bootstrap sağlayıcısı ve veritabanı ağdan önce hazırlanır; kapanış kaynakları kapatır. Bootstrap kaydı yokluğu yalnız kurulumu kapatır.                                                                                           | Kabul edildi |
+| D-055  | POSIX korumalı yollar root olmayan servis UID'sine ait tam `0700` dizin veya `0600` dosyadır. Bootstrap kaydı yalnız digest/bitiş taşır, 1 KiB ile sınırlıdır; ek/ham alan ve on dakikayı aşan süre reddedilir, süresi geçen kayıt yok sayılır.                                                           | Kabul edildi |
 
 ## Mimari inceleme sonuçları
 
@@ -234,7 +236,11 @@ Blok editörü, form tabanlı olay/eylem düzenleyicisi veya salt-okunur model g
 
 ### O-108 — GitHub hesap/organizasyon ve depo adresi
 
-Proje ve paketler sırasıyla herkese açık GitHub deposu ve GitHub Releases üzerinden yayımlanacaktır. Hangi GitHub hesabı/organizasyonunun kullanılacağı ve kesin depo URL’si ürün sahibine bırakılmıştır. Mevcut yerel Git remote’u bu kararın verildiği anlamına gelmez; kullanıcı açıkça seçmeden belge veya otomasyonlarda kalıcı yayın adresi olarak kullanılmaz. İlk kod iskeletini engellemez; halka açık sürümü ve sürüm metadata URL’sini engeller.
+Proje ve paketler sırasıyla herkese açık GitHub deposu ve GitHub Releases üzerinden yayımlanacaktır. Hangi GitHub hesabı/organizasyonunun kullanılacağı ve kesin depo URL'si ürün sahibine bırakılmıştır. Mevcut yerel Git remote'u bu kararın verildiği anlamına gelmez; kullanıcı açıkça seçmeden belge veya otomasyonlarda kalıcı yayın adresi olarak kullanılmaz. İlk kod iskeletini engellemez; halka açık sürümü ve sürüm metadata URL'sini engeller.
+
+### O-109 — Windows çalışma zamanı ACL denetimi
+
+Node.js dosya sistemi API'si Windows DACL'sini güvenilir biçimde raporlamaz; `fs.access` ACL sonucunu doğrulamaz. PowerShell ACL nesnesi yöntemleri cihaz ilkeleriyle kısıtlanabilir, `icacls` insan odaklı metin çıktısı ise güvenlik kararı için kararlı bir makine sözleşmesi değildir. Öneri, `GetNamedSecurityInfoW`/`AccessCheck` kullanan dar ve paketle birlikte doğrulanan bir Win32 yardımcı katmanıdır. Dil/toolchain, çağrı protokolü ve paket bütünlüğü uygulamadan önce netleştirilmelidir. Bu karar genel backend çalışmalarını değil Windows servis entegrasyonunu ve Windows paket çıkışını engeller.
 
 ## Karar verme ölçütleri
 

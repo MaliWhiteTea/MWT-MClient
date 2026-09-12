@@ -50,8 +50,13 @@ interface ServiceDatabase {
   revokeAdminSession(token: string, revokedAt?: Date): boolean;
 }
 
+export interface ConsumableBootstrapProof {
+  readonly record: BootstrapProofRecord;
+  consume(): Promise<boolean>;
+}
+
 export interface ControlServiceOptions {
-  readonly bootstrapProof: BootstrapProofRecord;
+  readonly bootstrapProof: ConsumableBootstrapProof | null;
   readonly databasePath: string;
   readonly getSetupPhase?: () => SetupPhase;
   readonly loopbackOrigins: readonly string[];
@@ -142,6 +147,7 @@ export async function createControlService(
             403: ApiErrorSchema,
             409: ApiErrorSchema,
             429: ApiErrorSchema,
+            503: ApiErrorSchema,
           },
         },
       },
@@ -149,13 +155,20 @@ export async function createControlService(
         if (database.hasAdministrator()) {
           return reply.code(409).send(apiError('administrator_exists'));
         }
+        if (options.bootstrapProof === null) {
+          return reply.code(503).send(apiError('bootstrap_proof_unavailable'));
+        }
         if (
           bootstrapProofConsumed ||
           !verifyBootstrapProof(
             request.body.bootstrapProof,
-            options.bootstrapProof,
+            options.bootstrapProof.record,
           )
         ) {
+          return reply.code(403).send(apiError('bootstrap_proof_invalid'));
+        }
+        bootstrapProofConsumed = true;
+        if (!(await options.bootstrapProof.consume())) {
           return reply.code(403).send(apiError('bootstrap_proof_invalid'));
         }
         try {
@@ -168,7 +181,6 @@ export async function createControlService(
           });
           const session = createAdminSession('loopback');
           database.createAdminSession(session);
-          bootstrapProofConsumed = true;
           setSessionCookie(reply, session.token);
           return reply.code(201).send({
             authenticated: true,
