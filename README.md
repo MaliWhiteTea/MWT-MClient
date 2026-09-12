@@ -59,6 +59,8 @@ pnpm verify
 
 Bu komutlar yalnız geliştirme iskeletini doğrular; henüz sistem servisi kurmaz veya bot çalıştırmaz.
 
+Windows ACL yardımcı programını geliştirmek ve yayımlamak ayrıca `global.json` ile sabitlenen .NET 10 SDK'sını gerektirir. Yardımcı program henüz uygulanmadığından mevcut `pnpm verify` akışı .NET build'i çalıştırmaz.
+
 Panelin geliştirme görünümünü yalnız localhost üzerinde açmak için:
 
 ```text
