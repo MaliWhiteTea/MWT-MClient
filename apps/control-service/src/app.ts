@@ -13,6 +13,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 interface ServiceDatabase {
   close(): void;
   diagnostics(): DatabaseDiagnostics;
+  hasAdministrator(): boolean;
 }
 
 export interface ControlServiceOptions {
@@ -26,12 +27,14 @@ export interface ControlServiceOptions {
 export async function createControlService(
   options: ControlServiceOptions,
 ): Promise<FastifyInstance> {
-  const getSetupPhase = options.getSetupPhase ?? (() => 'bootstrap');
   const database = await (options.openDatabase ?? openControlDatabase)({
     path: options.databasePath,
   });
 
   try {
+    const getSetupPhase =
+      options.getSetupPhase ??
+      (() => (database.hasAdministrator() ? 'local_only' : 'bootstrap'));
     const databaseSchemaVersion = database.diagnostics().schemaVersion;
     const app = Fastify({
       logger: false,

@@ -6,6 +6,11 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  createAdminPasswordVerifier,
+  createAdminSession,
+} from '@mwt-mclient/core';
+
+import {
   type CreateAccountInput,
   type CreateServerInput,
   openControlDatabase,
@@ -45,7 +50,7 @@ describe('control database', () => {
       foreignKeysEnabled: true,
       journalMode: 'wal',
       recoveryCleanupPendingCount: 0,
-      schemaVersion: 1,
+      schemaVersion: 2,
     });
     database.close();
 
@@ -57,10 +62,62 @@ describe('control database', () => {
         )
         .get(),
     ).toEqual({ checksumLength: 64, id: 1, name: 'initial_entities' });
+    expect(
+      inspection
+        .prepare('SELECT MAX(id) AS version FROM schema_migrations')
+        .get(),
+    ).toEqual({ version: 2 });
     inspection.close();
 
     const files = await readdir(join(path, '..'));
     expect(files.some((file) => file.includes('.recovery-'))).toBe(false);
+  });
+
+  it('stores one administrator verifier and only session token digests', async () => {
+    using database = await openControlDatabase({ path: ':memory:' });
+    const passwordVerifier = await createAdminPasswordVerifier(
+      'correct horse battery',
+    );
+
+    expect(database.hasAdministrator()).toBe(false);
+    database.createAdministrator({ displayName: 'Yönetici', passwordVerifier });
+    expect(database.hasAdministrator()).toBe(true);
+    expect(database.getAdministrator()).toEqual({
+      displayName: 'Yönetici',
+      passwordVerifier,
+    });
+    expect(() =>
+      database.createAdministrator({ displayName: 'İkinci', passwordVerifier }),
+    ).toThrow();
+
+    const now = new Date('2026-01-01T00:00:00.000Z');
+    const session = createAdminSession('loopback', now);
+    database.createAdminSession(session);
+    expect(
+      database.resumeAdminSession(
+        session.token,
+        'loopback',
+        new Date(now.getTime() + 60_000),
+      ),
+    ).toMatchObject({
+      audience: 'loopback',
+      idleExpiresAt: '2026-01-01T00:31:00.000Z',
+      lastSeenAt: '2026-01-01T00:01:00.000Z',
+    });
+    expect(database.resumeAdminSession(session.token, 'lan', now)).toBeNull();
+    expect(database.revokeAdminSession(session.token)).toBe(true);
+    expect(
+      database.resumeAdminSession(session.token, 'loopback', now),
+    ).toBeNull();
+
+    const expired = createAdminSession(
+      'loopback',
+      new Date(now.getTime() - 31 * 60_000),
+    );
+    database.createAdminSession(expired);
+    expect(
+      database.resumeAdminSession(expired.token, 'loopback', now),
+    ).toBeNull();
   });
 
   it('allows multiple profiles to share the same account and server', async () => {
@@ -191,7 +248,7 @@ describe('control database', () => {
         `INSERT INTO schema_migrations (id, name, checksum, applied_at)
          VALUES (?, ?, ?, ?)`,
       )
-      .run(2, 'future_schema', 'f'.repeat(64), new Date().toISOString());
+      .run(3, 'future_schema', 'f'.repeat(64), new Date().toISOString());
     expect(future.prepare('PRAGMA journal_mode').get()).toEqual({
       journal_mode: 'delete',
     });
@@ -272,7 +329,7 @@ describe('control database', () => {
     database.close();
 
     const committedSnapshot = `${path}.recovery-1-00000000-0000-4000-8000-000000000001.sqlite`;
-    const failedSnapshot = `${path}.recovery-2-00000000-0000-4000-8000-000000000002.sqlite`;
+    const failedSnapshot = `${path}.recovery-3-00000000-0000-4000-8000-000000000002.sqlite`;
     const unrelatedFile = `${path}.recovery-not-owned.sqlite`;
     await copyFile(path, committedSnapshot);
     await copyFile(path, failedSnapshot);

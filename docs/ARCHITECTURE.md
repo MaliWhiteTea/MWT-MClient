@@ -27,6 +27,7 @@ React UI  SQLite   Güvenli kasa   Worker yöneticisi
 - İstek, yanıt ve SSE olayları uygulamanın sahip olduğu sabit şemalarla doğrulanır; kullanıcı girdisi şema olarak derlenmez.
 - SQLite’a yalnızca gizli olmayan yapılandırma, durum ve kasa referansları yazar.
 - Worker süreçlerini başlatır, izler ve kontrollü biçimde durdurur.
+- Yönetici parolasını asenkron scrypt ile, kaynak başına deneme hızı ve süreç-geneli tek pahalı iş sınırı altında doğrular. Tek yönetici ve oturum kayıtları veri katmanındaki dar repository sınırından yönetilir; ham oturum belirteci kalıcılaştırılmaz. Oturum doğrulama ve idle yenileme bölünemez tek repository işlemidir.
 
 ### Panel
 

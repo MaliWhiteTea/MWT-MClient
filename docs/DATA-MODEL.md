@@ -23,7 +23,9 @@ Bu belge ilk sürümde korunması gereken varlık sınırlarını ve şema kural
 - `servers`: sunucu adresi/portu ile `auto` veya `manual` sürüm seçimi.
 - `bot_profiles`: hesap ile sunucuyu Mineflayer profili olarak bağlar; `account_id` veya `(account_id, server_id)` üzerinde tekillik yoktur.
 
-`bot_profiles.account_id` ve `bot_profiles.server_id` yabancı anahtarları `ON DELETE RESTRICT` kullanır. İlişki indeksleri performans içindir ve benzersiz değildir. İlk migration henüz Admin, script, audit veya çalışma geçmişi tablolarını oluşturmaz; bunlar kendi özellikleri ve açık kararları tamamlandığında yalnız ileri migration ile eklenecektir.
+`0002_admin_auth` migration'ı tek satırlık `administrator` tablosunu ve `admin_sessions` tablosunu ekler. Yönetici tablosu parolayı değil scrypt doğrulayıcısını ve parametrelerini tutar. Oturum tablosu ham belirteci değil SHA-256 özetini, `loopback`/`lan` audience değerini, hareketsizlik ve mutlak bitiş zamanlarını ve iptal durumunu tutar.
+
+`bot_profiles.account_id` ve `bot_profiles.server_id` yabancı anahtarları `ON DELETE RESTRICT` kullanır. İlişki indeksleri performans içindir ve benzersiz değildir. Script, audit ve çalışma geçmişi tabloları kendi özellikleri tamamlandığında yalnız ileri migration ile eklenecektir.
 
 ## Varlıklar
 
@@ -36,6 +38,17 @@ Bu belge ilk sürümde korunması gereken varlık sınırlarını ve şema kural
 - Parola doğrulama özeti ve parametreleri; parola değil
 - Oluşturulma ve son güncellenme zamanı
 - Gerekli güvenlik sürüm bilgileri
+
+Tekillik `singleton_id = 1` şema kısıtıyla korunur. Parola doğrulayıcısı kullanıcı yedeğine girmez.
+
+### AdminSession
+
+- Yalnız özeti saklanan rastgele oturum belirteci
+- Ayrı `loopback` veya `lan` audience değeri
+- Oluşturulma, son görülme, 30 dakikalık hareketsizlik bitişi ve 24 saatlik mutlak bitiş zamanı
+- İptal zamanı
+
+Mutlak bitiş süresi yenilenemez. İptal edilen veya iki süreden herhangi biri dolan oturum repository katmanından döndürülmez. Audience ve süre doğrulaması ile idle yenilemesi tek atomik SQL işleminde yapılır; çağıran kod salt kayıt varlığını oturum kanıtı sayamaz. Oturum kayıtları kullanıcı yedeğine girmez.
 
 ### AppSettings
 

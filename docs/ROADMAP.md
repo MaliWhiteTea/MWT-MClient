@@ -82,4 +82,4 @@ Bu maddelerin sırası ve sürüm eşlemesi henüz kararlaştırılmamıştır.
 
 ## Açık kararlar
 
-Tam liste `docs/DECISIONS.md` içindedir. Yönetici kimlik doğrulaması tamamlanmadan önce parola/oturum politikası (O-109) netleşmelidir. Microsoft özelliğinin yayınından önce uygulama kaydı (O-102), bot uyumluluk çıkışından önce Minecraft matrisi (O-103), script runtime’dan önce tetikleyici/eylem kataloğu ve ölçülmüş kotalar (O-105/O-106) kapanmalıdır. Linux destek tabanı (O-101), yedek şifreleme deneyimi (O-104) ve kesin GitHub hesap/organizasyon/depo adresi (O-108) halka açık paketleme öncesi gereklidir; sonraki görsel editör kapsamı (O-107) ilk sürümü engellemez.
+Tam liste `docs/DECISIONS.md` içindedir. Microsoft özelliğinin yayınından önce uygulama kaydı (O-102), bot uyumluluk çıkışından önce Minecraft matrisi (O-103), script runtime'dan önce tetikleyici/eylem kataloğu ve ölçülmüş kotalar (O-105/O-106) kapanmalıdır. Linux destek tabanı (O-101), yedek şifreleme deneyimi (O-104) ve kesin GitHub hesap/organizasyon/depo adresi (O-108) halka açık paketleme öncesi gereklidir; sonraki görsel editör kapsamı (O-107) ilk sürümü engellemez.

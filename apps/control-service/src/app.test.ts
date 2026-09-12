@@ -43,7 +43,7 @@ describe('control service contract', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
       databaseReady: true,
-      databaseSchemaVersion: 1,
+      databaseSchemaVersion: 2,
       product: 'MWT-MClient',
       setupPhase: 'bootstrap',
     });
@@ -57,11 +57,15 @@ describe('control service contract', () => {
       foreignKeysEnabled: true,
       journalMode: 'wal',
       recoveryCleanupPendingCount: 0,
-      schemaVersion: 1,
+      schemaVersion: 2,
     };
     const app = await createControlService({
       databasePath: 'unused-by-test',
-      openDatabase: async () => ({ close, diagnostics: () => diagnostics }),
+      openDatabase: async () => ({
+        close,
+        diagnostics: () => diagnostics,
+        hasAdministrator: () => false,
+      }),
     });
 
     await app.close();

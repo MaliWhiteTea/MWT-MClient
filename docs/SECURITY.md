@@ -29,7 +29,11 @@
 - Loopback dinleyicisi yalnız `127.0.0.1` ve varsa `::1` üzerinde HTTP kullanır; LAN ayrı HTTPS socket’idir ve wildcard bind varsayılan değildir.
 - Loopback ile LAN ayrı cookie adı/audience kullanır. LAN oturum belirteci `Secure`, `HttpOnly`, host-only ve `SameSite=Strict` çerezindedir; loopback belirteci LAN origin’inde geçersizdir.
 - Host ve Origin kesin allowlist ile doğrulanır. `X-Forwarded-For` ve benzeri proxy başlıkları loopback veya yönetici öncesi erişim kanıtı sayılmaz.
-- Parola saklama için güncel, bellek-zorlu bir parola türetme yöntemi seçilecektir; kesin algoritma ve parametreler açık karardır.
+- Yönetici parolası en az 12 karakterdir. Parolanın kendisi saklanmaz; 16 bayt rastgele salt ve scrypt `N=2^17`, `r=8`, `p=1`, 64 bayt çıktı parametreleriyle üretilen doğrulayıcı SQLite'ta tutulur. Türetme asenkron yapılır ve aşırı büyük girdiler kaynak tüketimini sınırlamak için reddedilir.
+- Parola doğrulama yalnız ortak authenticator üzerinden yapılır: güvenilir ağ katmanının ürettiği kaynak anahtarı başına 60 saniyede en çok beş deneme kabul edilir ve süreç genelinde aynı anda yalnız bir scrypt işi çalışır. Dolu kapasite yeni pahalı işi kuyruğa almaz; HTTP katmanı bunu genel bir hız-sınırı yanıtına dönüştürür.
+- Oturumlar 30 dakika hareketsizlikte ve oluşturulmalarından en geç 24 saat sonra sona erer. Rastgele 256 bitlik ham oturum belirteci yalnız istemciye verilir; SQLite'ta SHA-256 özeti ve süre/audience bilgisi saklanır.
+- Oturum sorgulaması yalnız ham belirteci özetleyen, doğru audience'ı isteyen, iptal/idle/absolute koşullarını aynı SQL işleminde uygulayan ve idle bitişini mutlak sınırı aşmadan atomik yenileyen repository işlemiyle yapılır. Süresi dolmuş veya iptal edilmiş kayıt çağırana döndürülmez.
+- Loopback ve LAN oturum audience'ları birbirinin yerine kullanılamaz. LAN ayarını değiştiren işlem mevcut oturuma ek olarak yöneticinin parolasını yeniden doğrular.
 - Kurtarma yalnız yükseltilmiş yerel etkileşimli komutla yapılır. Bütün oturumlar iptal edilir, LAN kapanır ve kullanıcı verisi korunarak localhost bootstrap’a dönülür; uzaktan reset uç noktası yoktur.
 
 ### LAN sertifika güveni
@@ -103,4 +107,4 @@
 
 ## Açık kararlar
 
-Yönetici parola/oturum politikası, yedeklerin zorunlu şifrelenip şifrelenmeyeceği, Linux/systemd destek tabanı ve script sayısal kotaları `docs/DECISIONS.md` içinde açık kalır. Microsoft uygulama kaydı ve resmî release adresi halka açık sürüm öncesi tamamlanmalıdır.
+Yedeklerin zorunlu şifrelenip şifrelenmeyeceği, Linux/systemd destek tabanı ve script sayısal kotaları `docs/DECISIONS.md` içinde açık kalır. Microsoft uygulama kaydı ve resmî release adresi halka açık sürüm öncesi tamamlanmalıdır.
